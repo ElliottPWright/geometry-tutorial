@@ -69,7 +69,7 @@ Materials makeMaterials() {
     return {air, pvt};
 }
 
-GeoPhysVol* buildPlane(const Materials& materials, const std::string& orient, const int z_trans) {
+GeoPhysVol* buildPlane(const Materials& materials, const std::string& orient) {
     // ---- STEP 2: the container ----------------------------------------------
     // Shape (GeoBox takes HALF-lengths) + name + material = logical volume;
     // a physical volume is one placed instance of it.
@@ -105,7 +105,7 @@ GeoPhysVol* buildPlane(const Materials& materials, const std::string& orient, co
         const double y = firstBarY + i * kBarWidth;
         container->add(
             new GeoNameTag("/tutorial/calo_plane/bar_" + std::to_string(i)));
-        container->add(new GeoTransform(GeoTrf::Translate3D(0, y * GU::mm, z_trans * GU::mm)));
+        container->add(new GeoTransform(GeoTrf::Translate3D(0, y * GU::mm, 0)));
         container->add(new GeoPhysVol(barLog));
     }
     return container;
@@ -115,7 +115,7 @@ GeoPhysVol* buildPlane(const Materials& materials, const std::string& orient, co
        const double x = firstBarY + i * kBarWidth;
        container->add(
 	   new GeoNameTag("/tutorial/calo_plane/bar_" + std::to_string(i)));
-       container->add(new GeoTransform(GeoTrf::Translate3D(x * GU::mm, 0, z_trans * GU::mm)));
+       container->add(new GeoTransform(GeoTrf::Translate3D(x * GU::mm, 0, 0)));
        container->add(new GeoPhysVol(barLog));
 }
     return container;
@@ -129,10 +129,10 @@ GeoPhysVol* buildWorld(const Materials& materials, const std::vector<GeoPhysVol*
                                   0.5 * kWorldZ * GU::mm);
     auto* world = new GeoPhysVol(new GeoLogVol("World", worldShape, materials.air));
     world->add(new GeoNameTag("/tutorial/calo_plane"));
-    world->add(new GeoTransform(GeoTrf::Translate3D(0, 0, 0)));
-    
-    for (GeoPhysVol* plane : planes){
-    world->add(plane);
+        
+    for (std::size_t i = 0; i < planes.size(); ++i){
+	 world->add(new GeoTransform(GeoTrf::Translate3D(0, 0, i * 20 * GU::mm)));
+	 world->add(planes[i]);
     }
 
     return world;
@@ -144,8 +144,8 @@ int main(int argc, char* argv[]) {
     const std::string output = argc > 1 ? argv[1] : "calo_plane.db";
 
     const Materials materials = makeMaterials();
-    GeoPhysVol* planeH = buildPlane(materials, "h", 0);
-    GeoPhysVol* planeV = buildPlane(materials, "v", 20);
+    GeoPhysVol* planeH = buildPlane(materials, "h");
+    GeoPhysVol* planeV = buildPlane(materials, "v");
     std::vector<GeoPhysVol*> planes = {planeH, planeV};
 
     GeoPhysVol* world = buildWorld(materials, planes);
