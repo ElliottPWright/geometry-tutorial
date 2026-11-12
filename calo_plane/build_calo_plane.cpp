@@ -52,6 +52,8 @@ Materials makeMaterials() {
     auto* nitrogen = new GeoElement("Nitrogen", "N", 7, 14.007 * GU::g / GU::mole);
     auto* oxygen = new GeoElement("Oxygen", "O", 8, 15.999 * GU::g / GU::mole);
     auto* argon = new GeoElement("Argon", "Ar", 18, 39.948 * GU::g / GU::mole);
+   
+    auto* lead = new GeoElement("Lead", "Pb", "82", "207.2" * GU::g / GU::mole);
 
     auto* air = new GeoMaterial("Air", 1.29e-3 * GU::g / GU::cm3);
     air->add(nitrogen, 0.755);
@@ -66,7 +68,35 @@ Materials makeMaterials() {
     pvt->add(hydrogen, 10 * 1.008 / molarMass);
     pvt->lock();
 
+    // Lead plate, Pb, the passive material in the ECAL
+    
+    auto* pb = new GeoMaterial("Pb_plate", 11.34 * GU::g / GU::cm3);
+    pb->add(lead, 1);
+    pb->lock();  
+
     return {air, pvt};
+}
+
+
+GeoPhysVol* buildPlate(const Materials& materials){
+    auto* containerShape = new GeoBox(
+	0.5 * kPlateXY * GU::mm, 0.5 * kPlateXY * GU::mm, 0.5 * kPlateZ * GU::mm);
+    auto* containerLog = 
+	new GeoLogVol("/tutorial/calo_plate_env", containerShape, materials.air);
+    auto* container = new GeoPhysVol(containerLog);
+
+    auto* plateShape = new GeoBox(0.5 * kPlateXY * GU::mm, 0.5 * kPlateXY * GU::mm, 0.5 * kPlateZ);
+    auto* plateLog =
+	    new GeoLogVol("/tutorial/calo_plate/pb", plateShape, materials.pb);
+
+    container->add(
+	new GeNameTag("/tutorial/calo_plate/plate_1"));
+
+    container->add(new GeoTransform(GeoTrf::Translate3D(0, 0, 0)));
+    container->add(new GeoPhysVol(plateLog));
+
+    return container;
+
 }
 
 GeoPhysVol* buildPlane(const Materials& materials, const std::string& orient) {
@@ -123,7 +153,7 @@ GeoPhysVol* buildPlane(const Materials& materials, const std::string& orient) {
 }
 
 // ---- STEP 5: a world around the plane ---------------------------------------
-GeoPhysVol* buildWorld(const Materials& materials, const std::vector<GeoPhysVol*>& planes) {
+GeoPhysVol* buildWorld(const Materials& materials, const std::vector<GeoPhysVol*>& planes, const std::vector<GeoPhysVol*>& plates) {
     
     auto* worldShape = new GeoBox(0.5 * kWorldXY * GU::mm, 0.5 * kWorldXY * GU::mm,
                                   0.5 * kWorldZ * GU::mm);
@@ -133,6 +163,11 @@ GeoPhysVol* buildWorld(const Materials& materials, const std::vector<GeoPhysVol*
     for (std::size_t i = 0; i < planes.size(); ++i){
 	 world->add(new GeoTransform(GeoTrf::Translate3D(0, 0, i * 20 * GU::mm)));
 	 world->add(planes[i]);
+    }
+
+    for (std::size_t i = 0; i < plates.size(); ++i){
+	 world->add(new GeoTransform(GeoTrf::Translate3D(0, 0, -10)));
+	 world->add(plates[i]);
     }
 
     return world;
@@ -148,7 +183,11 @@ int main(int argc, char* argv[]) {
     GeoPhysVol* planeV = buildPlane(materials, "v");
     std::vector<GeoPhysVol*> planes = {planeH, planeV};
 
-    GeoPhysVol* world = buildWorld(materials, planes);
+    GeoPhysVol* plate = buildPlate(materials);
+
+    std::vector<GeoPhysVol*> plates = {plate};
+
+    GeoPhysVol* world = buildWorld(materials, planes, plates);
     std::cout << "Horizontal plane: " << planeH->getNChildVols() << " bars of " << kPlaneXY
               << " x " << kBarWidth << " x " << kPlaneZ << " mm\n";
     
