@@ -38,9 +38,16 @@ constexpr int kNBars = static_cast<int>(kPlaneXY / kBarWidth);  // 36 bars
 constexpr double kWorldXY = 3000.0;  // a world box around the plane
 constexpr double kWorldZ = 1000.0;
 
+// Parameters for the lead plates
+
+constexpr double kPlateXY = 2160.0;
+constexpr double kPlateZ = 3.0;
+
+
 struct Materials {
     GeoMaterial* air;
     GeoMaterial* pvt;
+    GeoMaterial* pb;
 };
 
 // ---- STEP 1: elements and materials -----------------------------------------
@@ -53,7 +60,7 @@ Materials makeMaterials() {
     auto* oxygen = new GeoElement("Oxygen", "O", 8, 15.999 * GU::g / GU::mole);
     auto* argon = new GeoElement("Argon", "Ar", 18, 39.948 * GU::g / GU::mole);
    
-    auto* lead = new GeoElement("Lead", "Pb", "82", "207.2" * GU::g / GU::mole);
+    auto* lead = new GeoElement("Lead", "Pb", 82, 207.2 * GU::g / GU::mole);
 
     auto* air = new GeoMaterial("Air", 1.29e-3 * GU::g / GU::cm3);
     air->add(nitrogen, 0.755);
@@ -70,11 +77,11 @@ Materials makeMaterials() {
 
     // Lead plate, Pb, the passive material in the ECAL
     
-    auto* pb = new GeoMaterial("Pb_plate", 11.34 * GU::g / GU::cm3);
+    auto* pb = new GeoMaterial("Pb", 11.34 * GU::g / GU::cm3);
     pb->add(lead, 1);
     pb->lock();  
 
-    return {air, pvt};
+    return {air, pvt, pb};
 }
 
 
@@ -90,7 +97,7 @@ GeoPhysVol* buildPlate(const Materials& materials){
 	    new GeoLogVol("/tutorial/calo_plate/pb", plateShape, materials.pb);
 
     container->add(
-	new GeNameTag("/tutorial/calo_plate/plate_1"));
+	new GeoNameTag("/tutorial/calo_plate/plate_1"));
 
     container->add(new GeoTransform(GeoTrf::Translate3D(0, 0, 0)));
     container->add(new GeoPhysVol(plateLog));
@@ -166,7 +173,7 @@ GeoPhysVol* buildWorld(const Materials& materials, const std::vector<GeoPhysVol*
     }
 
     for (std::size_t i = 0; i < plates.size(); ++i){
-	 world->add(new GeoTransform(GeoTrf::Translate3D(0, 0, -10)));
+	 world->add(new GeoTransform(GeoTrf::Translate3D(0, 0, -10 * GU::mm)));
 	 world->add(plates[i]);
     }
 
