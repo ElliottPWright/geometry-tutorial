@@ -85,8 +85,8 @@ GeoPhysVol* buildPlane(const Materials& materials, const std::string& orient) {
     // /SHiP/calorimeter/wide_pvt_h. All 36 bars share this one logical
     // volume; only their positions differ.
   
-    double kBarX = (orient == "h") ? kBarWidth : kPlaneXY;
-    double kBarY = (orient == "h") ? kPlaneXY : kBarWidth; 
+    double kBarX = (orient == "h") ? kPlaneXY : kBarWidth;
+    double kBarY = (orient == "h") ? kBarWidth : kPlaneXY; 
 
     auto* barShape = new GeoBox(0.5 * kBarX * GU::mm, 0.5 * kBarY * GU::mm,
                                 0.5 * kPlaneZ * GU::mm);
